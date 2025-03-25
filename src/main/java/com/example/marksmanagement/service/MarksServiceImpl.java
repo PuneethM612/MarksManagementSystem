@@ -4,10 +4,13 @@ import com.example.marksmanagement.model.ExamType;
 import com.example.marksmanagement.model.Marks;
 import com.example.marksmanagement.model.Student;
 import com.example.marksmanagement.model.Subject;
+import com.example.marksmanagement.model.TopRanker;
 import com.example.marksmanagement.repository.MarksRepository;
 import com.example.marksmanagement.repository.StudentRepository;
 import com.example.marksmanagement.repository.SubjectRepository;
+import com.example.marksmanagement.repository.TopRankerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,28 +26,22 @@ import javax.persistence.Query;
 @Service
 public class MarksServiceImpl implements MarksService {
 
-    private MarksRepository marksRepository;
-    private StudentRepository studentRepository;
-    private SubjectRepository subjectRepository;
-    private EntityManager entityManager;
+    private final MarksRepository marksRepository;
+    private final StudentRepository studentRepository;
+    private final SubjectRepository subjectRepository;
+    private final TopRankerRepository topRankerRepository;
+    private final EntityManager entityManager;
 
     @Autowired
-    public void setMarksRepository(MarksRepository marksRepository) {
+    public MarksServiceImpl(MarksRepository marksRepository, 
+                          StudentRepository studentRepository,
+                          SubjectRepository subjectRepository,
+                          TopRankerRepository topRankerRepository,
+                          EntityManager entityManager) {
         this.marksRepository = marksRepository;
-    }
-
-    @Autowired
-    public void setStudentRepository(StudentRepository studentRepository) {
         this.studentRepository = studentRepository;
-    }
-
-    @Autowired
-    public void setSubjectRepository(SubjectRepository subjectRepository) {
         this.subjectRepository = subjectRepository;
-    }
-
-    @Autowired
-    public void setEntityManager(EntityManager entityManager) {
+        this.topRankerRepository = topRankerRepository;
         this.entityManager = entityManager;
     }
 
@@ -116,44 +113,55 @@ public class MarksServiceImpl implements MarksService {
 
     @Override
     public List<TopRankerDTO> getTop3Rankers(ExamType examType) {
-        // Using JPQL query to get top 3 rankers for specific exam type
-        String jpql = "SELECT new com.example.marksmanagement.dto.TopRankerDTO(" +
-                     "s.name, s.rollNumber, AVG(m.marks), m.examType) " +
-                     "FROM Marks m JOIN m.student s " +
-                     "WHERE m.examType = :examType " +
-                     "GROUP BY s.rollNumber, s.name, m.examType " +
-                     "ORDER BY AVG(m.marks) DESC " +
-                     "LIMIT 3";
+        // Get from top_rankers table
+        List<TopRanker> topRankers = topRankerRepository.findTop3ByExamType(examType.toString());
         
-        return entityManager.createQuery(jpql, TopRankerDTO.class)
-                          .setParameter("examType", examType)
-                          .getResultList();
+        // Convert to DTOs
+        return topRankers.stream()
+            .map(ranker -> new TopRankerDTO(
+                ranker.getStudentName(),
+                ranker.getRollNumber(),
+                ranker.getAverageMarks(),
+                ranker.getExamType()
+            ))
+            .collect(Collectors.toList());
     }
 
-    // Alternative method using native SQL query
-    public List<TopRankerDTO> getTop3RankersNativeSQL(ExamType examType) {
-        String sql = "SELECT s.name as student_name, s.roll_number, " +
-                    "AVG(m.marks) as average_marks, m.exam_type " +
-                    "FROM marks m " +
-                    "JOIN students s ON m.roll_number = s.roll_number " +
-                    "WHERE m.exam_type = :examType " +
-                    "GROUP BY s.roll_number, s.name, m.exam_type " +
-                    "ORDER BY AVG(m.marks) DESC " +
-                    "LIMIT 3";
-        
-        Query query = entityManager.createNativeQuery(sql)
-                                 .setParameter("examType", examType.toString());
-        
-        return (List<TopRankerDTO>) query.getResultList().stream()
-            .map(row -> {
-                Object[] rowArray = (Object[]) row;
-                return new TopRankerDTO(
-                    (String) rowArray[0],  // student_name
-                    (String) rowArray[1],  // roll_number
-                    ((Number) rowArray[2]).doubleValue(),  // average_marks
-                    ExamType.valueOf((String) rowArray[3])  // exam_type
+    // Scheduled task to update top rankers every hour
+    @Scheduled(fixedRate = 3600000) // 1 hour
+    @Transactional
+    public void updateTopRankers() {
+        for (ExamType examType : ExamType.values()) {
+            // Delete existing rankings for this exam type
+            topRankerRepository.deleteByExamType(examType);
+            
+            // Calculate new rankings
+            String sql = "SELECT s.name as student_name, s.roll_number, " +
+                        "AVG(m.marks) as average_marks, m.exam_type " +
+                        "FROM marks m " +
+                        "JOIN students s ON m.roll_number = s.roll_number " +
+                        "WHERE m.exam_type = :examType " +
+                        "GROUP BY s.roll_number, s.name, m.exam_type " +
+                        "ORDER BY AVG(m.marks) DESC " +
+                        "LIMIT 3";
+            
+            Query query = entityManager.createNativeQuery(sql)
+                                     .setParameter("examType", examType.toString());
+            
+            List<Object[]> results = query.getResultList();
+            
+            // Save new rankings
+            for (int i = 0; i < results.size(); i++) {
+                Object[] row = results.get(i);
+                TopRanker ranker = new TopRanker(
+                    (String) row[0],  // student_name
+                    (String) row[1],  // roll_number
+                    ((Number) row[2]).doubleValue(),  // average_marks
+                    ExamType.valueOf((String) row[3]),  // exam_type
+                    i + 1  // rank_position
                 );
-            })
-            .collect(Collectors.toList());
+                topRankerRepository.save(ranker);
+            }
+        }
     }
 } 
