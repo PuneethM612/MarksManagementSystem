@@ -22,5 +22,5 @@ public interface MarksService {
     
     void deleteMarks(Long id);
 
-    List<TopRankerDTO> getTop3Rankers();
+    List<TopRankerDTO> getTop3Rankers(ExamType examType);
 } 

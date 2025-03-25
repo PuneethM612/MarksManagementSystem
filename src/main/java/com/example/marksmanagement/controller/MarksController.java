@@ -231,9 +231,17 @@ public class MarksController {
     }
 
     @GetMapping("/top-rankers")
-    public String showTopRankers(Model model) {
-        List<TopRankerDTO> rankers = marksService.getTop3Rankers();
+    public String showTopRankersForm(Model model) {
+        model.addAttribute("examTypes", ExamType.values());
+        return "top-rankers";
+    }
+
+    @GetMapping("/top-rankers/results")
+    public String showTopRankers(@RequestParam ExamType examType, Model model) {
+        List<TopRankerDTO> rankers = marksService.getTop3Rankers(examType);
         model.addAttribute("rankers", rankers);
+        model.addAttribute("selectedExamType", examType);
+        model.addAttribute("examTypes", ExamType.values());
         return "top-rankers";
     }
 } 

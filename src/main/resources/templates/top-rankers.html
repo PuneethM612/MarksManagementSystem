@@ -11,10 +11,31 @@
             <a th:href="@{/marks}" class="btn btn-secondary">Back to Marks</a>
         </div>
 
-        <div class="card">
+        <div class="card mb-4">
+            <div class="card-body">
+                <form th:action="@{/marks/top-rankers/results}" method="get">
+                    <div class="mb-3">
+                        <label for="examType" class="form-label">Select Exam Type</label>
+                        <select class="form-select" id="examType" name="examType" required>
+                            <option value="">-- Select Exam Type --</option>
+                            <option th:each="examType : ${examTypes}" 
+                                    th:value="${examType}" 
+                                    th:text="${examType.displayName}"
+                                    th:selected="${examType == selectedExamType}"></option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Show Top Rankers</button>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${selectedExamType != null}" class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Top 3 Rankers for <span th:text="${selectedExamType.displayName}">Exam Type</span></h5>
+            </div>
             <div class="card-body">
                 <div th:if="${rankers.empty}" class="alert alert-info">
-                    No marks data available to determine rankers.
+                    No marks data available for this exam type.
                 </div>
 
                 <div th:unless="${rankers.empty}" class="table-responsive">
@@ -39,7 +60,7 @@
                                 <td th:text="${ranker.rollNumber}"></td>
                                 <td th:text="${#numbers.formatDecimal(ranker.averageMarks, 1, 2)}"></td>
                                 <td>
-                                    <a th:href="@{/marks/search/results(rollNumber=${ranker.rollNumber},examType=MID)}"
+                                    <a th:href="@{/marks/search/results(rollNumber=${ranker.rollNumber},examType=${ranker.examType})}"
                                         class="btn btn-sm btn-info">View Details</a>
                                 </td>
                             </tr>
