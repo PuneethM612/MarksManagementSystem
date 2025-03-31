@@ -235,11 +235,16 @@ public class MarksController {
     public String showTopRankers(Model model) {
         try {
             List<TopRankerDTO> topRankers = marksService.getTop3Rankers(ExamType.MONTHLY);
-            model.addAttribute("topRankers", topRankers);
+            if (topRankers == null || topRankers.isEmpty()) {
+                model.addAttribute("message", "No marks data available for ranking.");
+            } else {
+                model.addAttribute("topRankers", topRankers);
+            }
             return "marks/top-rankers";
         } catch (Exception e) {
-            model.addAttribute("error", "Error fetching top rankers: " + e.getMessage());
-            return "error";
+            log.error("Error in showTopRankers: {}", e.getMessage());
+            model.addAttribute("error", "Unable to fetch top rankers. Please try again later.");
+            return "marks/top-rankers";
         }
     }
 
@@ -247,21 +252,29 @@ public class MarksController {
     public String showTopRankers(@RequestParam ExamType examType, 
                                 @RequestParam(defaultValue = "average") String rankingType,
                                 Model model) {
-        List<TopRankerDTO> rankers;
-        if ("total".equals(rankingType)) {
-            rankers = marksService.getTop3RankersByTotalMarks(examType);
-        } else {
-            rankers = marksService.getTop3Rankers(examType);
+        try {
+            List<TopRankerDTO> rankers;
+            if ("total".equals(rankingType)) {
+                rankers = marksService.getTop3RankersByTotalMarks(examType);
+            } else {
+                rankers = marksService.getTop3Rankers(examType);
+            }
+            
+            if (rankers == null || rankers.isEmpty()) {
+                model.addAttribute("message", "No marks data available for ranking.");
+            } else {
+                model.addAttribute("rankers", rankers);
+            }
+            
+            model.addAttribute("selectedExamType", examType);
+            model.addAttribute("selectedRankingType", rankingType);
+            model.addAttribute("examTypes", ExamType.values());
+            return "top-rankers";
+        } catch (Exception e) {
+            log.error("Error in showTopRankers results: {}", e.getMessage());
+            model.addAttribute("error", "Unable to fetch top rankers. Please try again later.");
+            model.addAttribute("examTypes", ExamType.values());
+            return "top-rankers";
         }
-        
-        if (rankers == null) {
-            rankers = new ArrayList<>();
-        }
-        
-        model.addAttribute("rankers", rankers);
-        model.addAttribute("selectedExamType", examType);
-        model.addAttribute("selectedRankingType", rankingType);
-        model.addAttribute("examTypes", ExamType.values());
-        return "top-rankers";
     }
 } 

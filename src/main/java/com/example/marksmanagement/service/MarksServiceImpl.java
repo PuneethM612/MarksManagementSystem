@@ -129,19 +129,21 @@ public class MarksServiceImpl implements MarksService {
             List<Object[]> results = query.getResultList();
             List<TopRankerDTO> topRankers = new ArrayList<>();
             
-            for (Object[] row : results) {
-                try {
-                    TopRankerDTO dto = new TopRankerDTO(
-                        (String) row[0],  // student_name
-                        (String) row[1],  // roll_number
-                        ((Number) row[2]).doubleValue(),  // average_marks
-                        examType,
-                        ((Number) row[3]).intValue()  // rank_position
-                    );
-                    topRankers.add(dto);
-                    log.info("Added ranker: {} with marks: {}", dto.getStudentName(), dto.getAverageMarks());
-                } catch (Exception e) {
-                    log.error("Error creating DTO for row: {}", row, e);
+            if (results != null) {
+                for (Object[] row : results) {
+                    try {
+                        TopRankerDTO dto = new TopRankerDTO(
+                            (String) row[0],  // student_name
+                            (String) row[1],  // roll_number
+                            ((Number) row[2]).doubleValue(),  // average_marks
+                            examType,
+                            ((Number) row[3]).intValue()  // rank_position
+                        );
+                        topRankers.add(dto);
+                        log.info("Added ranker: {} with marks: {}", dto.getStudentName(), dto.getAverageMarks());
+                    } catch (Exception e) {
+                        log.error("Error creating DTO for row: {}", row, e);
+                    }
                 }
             }
             
@@ -175,19 +177,21 @@ public class MarksServiceImpl implements MarksService {
             List<Object[]> results = query.getResultList();
             List<TopRankerDTO> topRankers = new ArrayList<>();
             
-            for (Object[] row : results) {
-                try {
-                    TopRankerDTO dto = new TopRankerDTO(
-                        (String) row[0],  // student_name
-                        (String) row[1],  // roll_number
-                        ((Number) row[2]).doubleValue(),  // total_marks
-                        examType,
-                        ((Number) row[3]).intValue()  // rank_position
-                    );
-                    topRankers.add(dto);
-                    log.info("Added ranker: {} with total marks: {}", dto.getStudentName(), dto.getAverageMarks());
-                } catch (Exception e) {
-                    log.error("Error creating DTO for row: {}", row, e);
+            if (results != null) {
+                for (Object[] row : results) {
+                    try {
+                        TopRankerDTO dto = new TopRankerDTO(
+                            (String) row[0],  // student_name
+                            (String) row[1],  // roll_number
+                            ((Number) row[2]).doubleValue(),  // total_marks
+                            examType,
+                            ((Number) row[3]).intValue()  // rank_position
+                        );
+                        topRankers.add(dto);
+                        log.info("Added ranker: {} with total marks: {}", dto.getStudentName(), dto.getAverageMarks());
+                    } catch (Exception e) {
+                        log.error("Error creating DTO for row: {}", row, e);
+                    }
                 }
             }
             
