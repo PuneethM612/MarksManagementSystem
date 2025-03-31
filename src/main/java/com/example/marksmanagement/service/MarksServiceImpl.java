@@ -120,54 +120,101 @@ public class MarksServiceImpl implements MarksService {
     @Override
     @Transactional(readOnly = true)
     public List<TopRankerDTO> getTop3Rankers(ExamType examType) {
-        List<TopRanker> topRankers = topRankerRepository.findTop3ByExamType(examType.toString());
-        List<TopRankerDTO> dtoList = new ArrayList<>();
-        for (TopRanker ranker : topRankers) {
-            TopRankerDTO dto = new TopRankerDTO(
-                ranker.getStudentName(),
-                ranker.getRollNumber(),
-                ranker.getAverageMarks(),
-                ranker.getExamType(),
-                ranker.getRankPosition()
-            );
-            dtoList.add(dto);
+        try {
+            log.info("Fetching top 3 rankers for exam type: {}", examType);
+            List<TopRanker> topRankers = topRankerRepository.findTop3ByExamType(examType.toString());
+            
+            // If no data in top_rankers table, get it directly from marks and students
+            if (topRankers.isEmpty()) {
+                log.info("No data found in top_rankers table, fetching directly from marks and students");
+                topRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
+            }
+            
+            List<TopRankerDTO> dtoList = new ArrayList<>();
+            for (TopRanker ranker : topRankers) {
+                try {
+                    TopRankerDTO dto = new TopRankerDTO(
+                        ranker.getStudentName(),
+                        ranker.getRollNumber(),
+                        ranker.getAverageMarks(),
+                        ranker.getExamType(),
+                        ranker.getRankPosition()
+                    );
+                    dtoList.add(dto);
+                    log.info("Added ranker: {} with marks: {}", ranker.getStudentName(), ranker.getAverageMarks());
+                } catch (Exception e) {
+                    log.error("Error creating DTO for ranker: {}", ranker, e);
+                }
+            }
+            return dtoList;
+        } catch (Exception e) {
+            log.error("Error fetching top rankers for exam type {}: {}", examType, e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
         }
-        return dtoList;
     }
 
     @Override
     public List<TopRankerDTO> getTop3RankersByTotalMarks(ExamType examType) {
-        log.info("Fetching top 3 rankers by total marks for exam type: {}", examType);
-        List<TopRanker> topRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
-        log.info("Found {} top rankers", topRankers.size());
-        
-        List<TopRankerDTO> dtoList = new ArrayList<>();
-        for (TopRanker ranker : topRankers) {
-            TopRankerDTO dto = new TopRankerDTO(
-                ranker.getStudentName(),
-                ranker.getRollNumber(),
-                ranker.getAverageMarks(),
-                ranker.getExamType(),
-                ranker.getRankPosition()
-            );
-            dtoList.add(dto);
-            log.info("Added ranker: {} with total marks: {}", ranker.getStudentName(), ranker.getAverageMarks());
+        try {
+            log.info("Fetching top 3 rankers by total marks for exam type: {}", examType);
+            List<TopRanker> topRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
+            log.info("Found {} top rankers", topRankers.size());
+            
+            List<TopRankerDTO> dtoList = new ArrayList<>();
+            for (TopRanker ranker : topRankers) {
+                try {
+                    TopRankerDTO dto = new TopRankerDTO(
+                        ranker.getStudentName(),
+                        ranker.getRollNumber(),
+                        ranker.getAverageMarks(),
+                        ranker.getExamType(),
+                        ranker.getRankPosition()
+                    );
+                    dtoList.add(dto);
+                    log.info("Added ranker: {} with total marks: {}", ranker.getStudentName(), ranker.getAverageMarks());
+                } catch (Exception e) {
+                    log.error("Error creating DTO for ranker: {}", ranker, e);
+                }
+            }
+            return dtoList;
+        } catch (Exception e) {
+            log.error("Error fetching top rankers by total marks for exam type {}: {}", examType, e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
         }
-        return dtoList;
     }
 
     @Scheduled(fixedRate = 3600000) // Update every hour
+    @Transactional
     public void updateTopRankers() {
+        log.info("Starting update of top rankers");
         for (ExamType examType : ExamType.values()) {
             try {
+                log.info("Processing exam type: {}", examType);
+                // Delete existing rankings for this exam type
                 topRankerRepository.deleteByExamType(examType);
+                
+                // Get new rankings
                 List<TopRanker> newRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
+                log.info("Found {} new rankers for exam type {}", newRankers.size(), examType);
+                
+                // Save new rankings
                 for (TopRanker ranker : newRankers) {
-                    topRankerRepository.save(ranker);
+                    try {
+                        TopRanker savedRanker = topRankerRepository.save(ranker);
+                        log.info("Saved ranker: {} with rank position: {}", 
+                                savedRanker.getStudentName(), 
+                                savedRanker.getRankPosition());
+                    } catch (Exception e) {
+                        log.error("Error saving ranker: {}", ranker, e);
+                    }
                 }
+                
                 log.info("Successfully updated top rankers for exam type: {}", examType);
             } catch (Exception e) {
                 log.error("Error updating top rankers for exam type {}: {}", examType, e.getMessage());
+                e.printStackTrace();
             }
         }
     }
