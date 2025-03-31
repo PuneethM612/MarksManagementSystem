@@ -127,6 +127,20 @@ public class MarksServiceImpl implements MarksService {
             .collect(Collectors.toList());
     }
 
+    @Override
+    public List<TopRankerDTO> getTop3RankersByTotalMarks(ExamType examType) {
+        List<TopRanker> topRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
+        return topRankers.stream()
+                .map(ranker -> new TopRankerDTO(
+                        ranker.getStudentName(),
+                        ranker.getRollNumber(),
+                        ranker.getAverageMarks(),
+                        ranker.getExamType(),
+                        ranker.getRankPosition()
+                ))
+                .collect(Collectors.toList());
+    }
+
     // Scheduled task to update top rankers every hour
     @Scheduled(fixedRate = 3600000) // 1 hour
     @Transactional

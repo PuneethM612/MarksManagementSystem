@@ -237,10 +237,18 @@ public class MarksController {
     }
 
     @GetMapping("/top-rankers/results")
-    public String showTopRankers(@RequestParam ExamType examType, Model model) {
-        List<TopRankerDTO> rankers = marksService.getTop3Rankers(examType);
+    public String showTopRankers(@RequestParam ExamType examType, 
+                                @RequestParam(defaultValue = "average") String rankingType,
+                                Model model) {
+        List<TopRankerDTO> rankers;
+        if ("total".equals(rankingType)) {
+            rankers = marksService.getTop3RankersByTotalMarks(examType);
+        } else {
+            rankers = marksService.getTop3Rankers(examType);
+        }
         model.addAttribute("rankers", rankers);
         model.addAttribute("selectedExamType", examType);
+        model.addAttribute("selectedRankingType", rankingType);
         model.addAttribute("examTypes", ExamType.values());
         return "top-rankers";
     }
