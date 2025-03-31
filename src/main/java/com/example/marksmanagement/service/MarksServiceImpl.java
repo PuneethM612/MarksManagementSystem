@@ -120,27 +120,19 @@ public class MarksServiceImpl implements MarksService {
     @Override
     @Transactional(readOnly = true)
     public List<TopRankerDTO> getTop3Rankers(ExamType examType) {
-        String sql = "SELECT s.name, s.roll_number, SUM(m.marks) as total_marks " +
-                    "FROM marks m " +
-                    "JOIN students s ON m.roll_number = s.roll_number " +
-                    "WHERE m.exam_type = :examType " +
-                    "GROUP BY s.roll_number, s.name " +
-                    "ORDER BY total_marks DESC " +
-                    "LIMIT 3";
-        
-        Query query = entityManager.createNativeQuery(sql)
-                                 .setParameter("examType", examType.toString());
-        
-        List<Object[]> results = query.getResultList();
-        
-        return results.stream()
-            .map(row -> new TopRankerDTO(
-                (String) row[0],  // student name
-                (String) row[1],  // roll number
-                ((Number) row[2]).doubleValue(),  // total marks
-                examType
-            ))
-            .collect(Collectors.toList());
+        List<TopRanker> topRankers = topRankerRepository.findTop3ByExamType(examType.toString());
+        List<TopRankerDTO> dtoList = new ArrayList<>();
+        for (TopRanker ranker : topRankers) {
+            TopRankerDTO dto = new TopRankerDTO(
+                ranker.getStudentName(),
+                ranker.getRollNumber(),
+                ranker.getAverageMarks(),
+                ranker.getExamType(),
+                ranker.getRankPosition()
+            );
+            dtoList.add(dto);
+        }
+        return dtoList;
     }
 
     @Override
