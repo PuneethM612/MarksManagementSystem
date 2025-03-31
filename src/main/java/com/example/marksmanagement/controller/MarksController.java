@@ -236,18 +236,32 @@ public class MarksController {
     }
 
     @GetMapping("/top-rankers")
-    public String showTopRankers(Model model) {
+    public String showTopRankers(@RequestParam(required = false) ExamType examType, Model model) {
         try {
-            List<TopRankerDTO> topRankers = marksService.getTop3Rankers(ExamType.MONTHLY);
+            // Initial page load without parameters
+            if (examType == null) {
+                model.addAttribute("examTypes", ExamType.values());
+                return "marks/top-rankers";
+            }
+            
+            // User clicked the button, fetch top rankers by total marks
+            log.info("Fetching top rankers for exam type: {}", examType);
+            List<TopRankerDTO> topRankers = marksService.getTop3RankersByTotalMarks(examType);
+            
             if (topRankers == null || topRankers.isEmpty()) {
-                model.addAttribute("message", "No marks data available for ranking.");
+                model.addAttribute("message", "No marks data available for the selected exam type.");
             } else {
                 model.addAttribute("topRankers", topRankers);
             }
+            
+            model.addAttribute("examTypes", ExamType.values());
+            model.addAttribute("selectedExamType", examType);
             return "marks/top-rankers";
+            
         } catch (Exception e) {
-            log.error("Error in showTopRankers: {}", e.getMessage());
+            log.error("Error in showTopRankers: {}", e.getMessage(), e);
             model.addAttribute("error", "Unable to fetch top rankers. Please try again later.");
+            model.addAttribute("examTypes", ExamType.values());
             return "marks/top-rankers";
         }
     }

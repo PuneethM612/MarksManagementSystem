@@ -161,17 +161,18 @@ public class MarksServiceImpl implements MarksService {
         try {
             log.info("Fetching top 3 rankers by total marks for exam type: {}", examType);
             
-            String sql = "SELECT s.name as student_name, s.roll_number, " +
-                        "ROUND(SUM(m.marks), 2) as total_marks, " +
-                        "ROW_NUMBER() OVER (ORDER BY SUM(m.marks) DESC) as rank_position " +
-                        "FROM marks m " +
-                        "JOIN students s ON m.student_id = s.id " +
-                        "WHERE m.exam_type = :examType " +
-                        "GROUP BY s.id, s.name, s.roll_number " +
-                        "ORDER BY total_marks DESC " +
-                        "LIMIT 3";
+            StringBuilder queryBuilder = new StringBuilder();
+            queryBuilder.append("SELECT s.name as student_name, s.roll_number, ");
+            queryBuilder.append("SUM(m.marks) as total_marks, ");
+            queryBuilder.append("RANK() OVER (ORDER BY SUM(m.marks) DESC) as rank_position ");
+            queryBuilder.append("FROM marks m ");
+            queryBuilder.append("JOIN students s ON m.student_id = s.id ");
+            queryBuilder.append("WHERE m.exam_type = :examType ");
+            queryBuilder.append("GROUP BY s.id, s.name, s.roll_number ");
+            queryBuilder.append("ORDER BY total_marks DESC ");
+            queryBuilder.append("LIMIT 3");
 
-            Query query = entityManager.createNativeQuery(sql);
+            Query query = entityManager.createNativeQuery(queryBuilder.toString());
             query.setParameter("examType", examType.toString());
             
             List<Object[]> results = query.getResultList();
@@ -197,8 +198,7 @@ public class MarksServiceImpl implements MarksService {
             
             return topRankers;
         } catch (Exception e) {
-            log.error("Error fetching top rankers by total marks for exam type {}: {}", examType, e.getMessage());
-            e.printStackTrace();
+            log.error("Error fetching top rankers by total marks for exam type {}: {}", examType, e.getMessage(), e);
             return new ArrayList<>();
         }
     }

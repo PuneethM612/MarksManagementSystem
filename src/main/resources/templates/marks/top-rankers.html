@@ -9,6 +9,32 @@
     <div class="container mt-5">
         <h2 class="mb-4">Top 3 Rankers</h2>
         
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="rankerForm" th:action="@{/marks/top-rankers}" method="GET">
+                    <div class="form-group">
+                        <label for="examType">Select Exam Type:</label>
+                        <select class="form-control" id="examType" name="examType">
+                            <option value="MONTHLY">Monthly Exam</option>
+                            <option value="MID">Mid Term</option>
+                            <option value="ANNUAL">Annual Exam</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-trophy"></i> Show Top Rankers
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div th:if="${message != null}" class="alert alert-info">
+            <i class="fas fa-info-circle"></i> <span th:text="${message}"></span>
+        </div>
+        
+        <div th:if="${error != null}" class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> <span th:text="${error}"></span>
+        </div>
+        
         <div th:if="${topRankers != null and not #lists.isEmpty(topRankers)}" class="table-responsive">
             <table class="table table-striped">
                 <thead>
@@ -16,7 +42,7 @@
                         <th>Rank</th>
                         <th>Student Name</th>
                         <th>Roll Number</th>
-                        <th>Average Marks</th>
+                        <th>Total Marks</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -45,10 +71,6 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
-        
-        <div th:if="${topRankers == null or #lists.isEmpty(topRankers)}" class="alert alert-info">
-            <i class="fas fa-info-circle"></i> No data available for top rankers.
         </div>
     </div>
 
