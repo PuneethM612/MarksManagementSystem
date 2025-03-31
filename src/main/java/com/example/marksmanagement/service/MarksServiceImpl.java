@@ -4,10 +4,12 @@ import com.example.marksmanagement.model.ExamType;
 import com.example.marksmanagement.model.Marks;
 import com.example.marksmanagement.model.Student;
 import com.example.marksmanagement.model.Subject;
+import com.example.marksmanagement.model.TopRanker;
 import com.example.marksmanagement.dto.TopRankerDTO;
 import com.example.marksmanagement.repository.MarksRepository;
 import com.example.marksmanagement.repository.StudentRepository;
 import com.example.marksmanagement.repository.SubjectRepository;
+import com.example.marksmanagement.repository.TopRankerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class MarksServiceImpl implements MarksService {
     private final MarksRepository marksRepository;
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
+    private final TopRankerRepository topRankerRepository;
     private final EntityManager entityManager;
     private static final Logger log = LoggerFactory.getLogger(MarksServiceImpl.class);
 
@@ -39,10 +42,12 @@ public class MarksServiceImpl implements MarksService {
     public MarksServiceImpl(MarksRepository marksRepository, 
                           StudentRepository studentRepository,
                           SubjectRepository subjectRepository,
+                          TopRankerRepository topRankerRepository,
                           EntityManager entityManager) {
         this.marksRepository = marksRepository;
         this.studentRepository = studentRepository;
         this.subjectRepository = subjectRepository;
+        this.topRankerRepository = topRankerRepository;
         this.entityManager = entityManager;
     }
 
