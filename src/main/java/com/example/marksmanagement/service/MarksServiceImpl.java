@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 import java.util.Comparator;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import javax.persistence.NoResultException;
 
 @Service
 public class MarksServiceImpl implements MarksService {
@@ -108,29 +109,50 @@ public class MarksServiceImpl implements MarksService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<TopRankerDTO> getTop3Rankers(ExamType examType) {
-        String sql = "SELECT s.name as student_name, s.roll_number, " +
-                    "SUM(m.marks) as total_marks, m.exam_type " +
-                    "FROM marks m " +
-                    "JOIN students s ON m.roll_number = s.roll_number " +
-                    "WHERE m.exam_type = :examType " +
-                    "GROUP BY s.roll_number, s.name, m.exam_type " +
-                    "ORDER BY SUM(m.marks) DESC " +
-                    "LIMIT 3";
-        
-        Query query = entityManager.createNativeQuery(sql)
-                                 .setParameter("examType", examType.toString());
-        
-        List<Object[]> results = query.getResultList();
-        
-        return results.stream()
-            .map(row -> new TopRankerDTO(
-                (String) row[0],  // student_name
-                (String) row[1],  // roll_number
-                ((Number) row[2]).doubleValue(),  // total_marks
-                ExamType.valueOf((String) row[3])  // exam_type
-            ))
-            .collect(Collectors.toList());
+        try {
+            String sql = "SELECT s.name as student_name, s.roll_number, " +
+                        "COALESCE(SUM(m.marks), 0) as total_marks, m.exam_type " +
+                        "FROM marks m " +
+                        "JOIN students s ON m.roll_number = s.roll_number " +
+                        "WHERE m.exam_type = :examType " +
+                        "GROUP BY s.roll_number, s.name, m.exam_type " +
+                        "HAVING SUM(m.marks) > 0 " +
+                        "ORDER BY total_marks DESC " +
+                        "LIMIT 3";
+            
+            Query query = entityManager.createNativeQuery(sql)
+                                     .setParameter("examType", examType.toString());
+            
+            List<Object[]> results = query.getResultList();
+            
+            if (results == null || results.isEmpty()) {
+                return Collections.emptyList();
+            }
+            
+            return results.stream()
+                .map(row -> {
+                    try {
+                        String studentName = row[0] != null ? (String) row[0] : "";
+                        String rollNumber = row[1] != null ? (String) row[1] : "";
+                        Double totalMarks = row[2] != null ? ((Number) row[2]).doubleValue() : 0.0;
+                        ExamType examTypeResult = row[3] != null ? ExamType.valueOf((String) row[3]) : examType;
+                        
+                        return new TopRankerDTO(studentName, rollNumber, totalMarks, examTypeResult);
+                    } catch (Exception e) {
+                        System.err.println("Error processing row: " + e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(dto -> dto != null)
+                .collect(Collectors.toList());
+                
+        } catch (Exception e) {
+            System.err.println("Error in getTop3Rankers: " + e.getMessage());
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
     }
 
     // Scheduled task to update top rankers every hour
