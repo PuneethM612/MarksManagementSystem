@@ -5,11 +5,11 @@ import com.example.marksmanagement.model.ExamType;
 public class TopRankerDTO {
     private String studentName;
     private String rollNumber;
-    private Double averageMarks;
+    private double averageMarks;
     private ExamType examType;
-    private Integer rankPosition;
+    private int rankPosition;
 
-    public TopRankerDTO(String studentName, String rollNumber, Double averageMarks, ExamType examType, Integer rankPosition) {
+    public TopRankerDTO(String studentName, String rollNumber, double averageMarks, ExamType examType, int rankPosition) {
         this.studentName = studentName;
         this.rollNumber = rollNumber;
         this.averageMarks = averageMarks;
@@ -33,11 +33,11 @@ public class TopRankerDTO {
         this.rollNumber = rollNumber;
     }
 
-    public Double getAverageMarks() {
+    public double getAverageMarks() {
         return averageMarks;
     }
 
-    public void setAverageMarks(Double averageMarks) {
+    public void setAverageMarks(double averageMarks) {
         this.averageMarks = averageMarks;
     }
 
@@ -49,9 +49,11 @@ public class TopRankerDTO {
         this.examType = examType;
     }
 
-    public Integer getRankPosition() {
+    public int getRankPosition() {
         return rankPosition;
     }
 
-    public void setRankPosition(Integer rankPosition) {
+    public void setRankPosition(int rankPosition) {
+        this.rankPosition = rankPosition;
+    }
 } 

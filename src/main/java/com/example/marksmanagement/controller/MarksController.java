@@ -232,9 +232,15 @@ public class MarksController {
     }
 
     @GetMapping("/top-rankers")
-    public String showTopRankersForm(Model model) {
-        model.addAttribute("examTypes", ExamType.values());
-        return "top-rankers";
+    public String showTopRankers(Model model) {
+        try {
+            List<TopRankerDTO> topRankers = marksService.getTop3Rankers(ExamType.MONTHLY);
+            model.addAttribute("topRankers", topRankers);
+            return "marks/top-rankers";
+        } catch (Exception e) {
+            model.addAttribute("error", "Error fetching top rankers: " + e.getMessage());
+            return "error";
+        }
     }
 
     @GetMapping("/top-rankers/results")

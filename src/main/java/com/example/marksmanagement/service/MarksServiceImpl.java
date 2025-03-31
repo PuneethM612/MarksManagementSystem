@@ -10,7 +10,8 @@ import com.example.marksmanagement.repository.SubjectRepository;
 import com.example.marksmanagement.dto.TopRankerDTO;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,10 +21,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 public class MarksServiceImpl implements MarksService {
 
+    private static final Logger log = LoggerFactory.getLogger(MarksServiceImpl.class);
     private final MarksRepository marksRepository;
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
@@ -109,35 +110,46 @@ public class MarksServiceImpl implements MarksService {
     @Override
     @Transactional(readOnly = true)
     public List<TopRankerDTO> getTop3Rankers(ExamType examType) {
-        String sql = """
-            WITH RankedStudents AS (
-                SELECT 
-                    s.name as student_name,
-                    s.roll_number,
-                    ROUND(AVG(m.marks), 2) as average_marks,
-                    ROW_NUMBER() OVER (ORDER BY AVG(m.marks) DESC) as rank_position
-                FROM marks m
-                JOIN students s ON m.student_id = s.id
-                WHERE m.exam_type = :examType
-                GROUP BY s.id, s.name, s.roll_number
-                ORDER BY average_marks DESC
-                LIMIT 3
-            )
-            SELECT * FROM RankedStudents
-            """;
+        try {
+            log.info("Fetching top 3 rankers for exam type: {}", examType);
+            
+            String sql = "SELECT s.name as student_name, s.roll_number, " +
+                        "ROUND(AVG(m.marks), 2) as average_marks, " +
+                        "ROW_NUMBER() OVER (ORDER BY AVG(m.marks) DESC) as rank_position " +
+                        "FROM marks m " +
+                        "JOIN students s ON m.student_id = s.id " +
+                        "WHERE m.exam_type = :examType " +
+                        "GROUP BY s.id, s.name, s.roll_number " +
+                        "ORDER BY average_marks DESC " +
+                        "LIMIT 3";
 
-        Query query = entityManager.createNativeQuery(sql);
-        query.setParameter("examType", examType.toString());
-        
-        List<Object[]> results = query.getResultList();
-        return results.stream()
-            .map(row -> new TopRankerDTO(
-                (String) row[0],  // student_name
-                (String) row[1],  // roll_number
-                ((Number) row[2]).doubleValue(),  // average_marks
-                examType,
-                ((Number) row[3]).intValue()  // rank_position
-            ))
-            .collect(Collectors.toList());
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("examType", examType.toString());
+            
+            List<Object[]> results = query.getResultList();
+            List<TopRankerDTO> topRankers = new ArrayList<>();
+            
+            for (Object[] row : results) {
+                try {
+                    TopRankerDTO dto = new TopRankerDTO(
+                        (String) row[0],  // student_name
+                        (String) row[1],  // roll_number
+                        ((Number) row[2]).doubleValue(),  // average_marks
+                        examType,
+                        ((Number) row[3]).intValue()  // rank_position
+                    );
+                    topRankers.add(dto);
+                    log.info("Added ranker: {} with marks: {}", dto.getStudentName(), dto.getAverageMarks());
+                } catch (Exception e) {
+                    log.error("Error creating DTO for row: {}", row, e);
+                }
+            }
+            
+            return topRankers;
+        } catch (Exception e) {
+            log.error("Error fetching top rankers for exam type {}: {}", examType, e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
     }
 } 

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Top Rankers</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4">Top 3 Rankers</h2>
+        
+        <div th:if="${topRankers != null and not #lists.isEmpty(topRankers)}" class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Student Name</th>
+                        <th>Roll Number</th>
+                        <th>Average Marks</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="ranker : ${topRankers}">
+                        <td>
+                            <span th:if="${ranker.rankPosition == 1}" class="badge badge-warning">
+                                <i class="fas fa-medal"></i> 1st
+                            </span>
+                            <span th:if="${ranker.rankPosition == 2}" class="badge badge-secondary">
+                                <i class="fas fa-medal"></i> 2nd
+                            </span>
+                            <span th:if="${ranker.rankPosition == 3}" class="badge badge-danger">
+                                <i class="fas fa-medal"></i> 3rd
+                            </span>
+                        </td>
+                        <td th:text="${ranker.studentName}"></td>
+                        <td th:text="${ranker.rollNumber}"></td>
+                        <td th:text="${ranker.averageMarks}"></td>
+                        <td>
+                            <a th:href="@{/marks/student/{rollNumber}(rollNumber=${ranker.rollNumber})}" 
+                               class="btn btn-primary btn-sm">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div th:if="${topRankers == null or #lists.isEmpty(topRankers)}" class="alert alert-info">
+            <i class="fas fa-info-circle"></i> No data available for top rankers.
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html> 
