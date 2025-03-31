@@ -15,6 +15,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -246,6 +247,11 @@ public class MarksController {
         } else {
             rankers = marksService.getTop3Rankers(examType);
         }
+        
+        if (rankers == null) {
+            rankers = new ArrayList<>();
+        }
+        
         model.addAttribute("rankers", rankers);
         model.addAttribute("selectedExamType", examType);
         model.addAttribute("selectedRankingType", rankingType);

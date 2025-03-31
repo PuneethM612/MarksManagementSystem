@@ -20,29 +20,29 @@ public interface TopRankerRepository extends JpaRepository<TopRanker, Long> {
     
     void deleteByExamType(ExamType examType);
 
-    @Query(value = """
-        WITH student_totals AS (
-            SELECT 
-                s.name as student_name,
-                s.roll_number,
-                SUM(m.marks) as total_marks,
-                COUNT(DISTINCT m.subject_id) as subject_count
-            FROM students s
-            JOIN marks m ON s.roll_number = m.student_roll_number
-            WHERE m.exam_type = :examType
-            GROUP BY s.roll_number, s.name
-            HAVING COUNT(DISTINCT m.subject_id) = (SELECT COUNT(*) FROM subjects)
-        )
-        SELECT 
-            student_name,
-            roll_number,
-            total_marks as average_marks,
-            :examType as exam_type,
-            ROW_NUMBER() OVER (ORDER BY total_marks DESC) as rank_position,
-            CURRENT_TIMESTAMP as last_updated
-        FROM student_totals
-        ORDER BY total_marks DESC
-        LIMIT 3
-    """, nativeQuery = true)
+    @Query(value = 
+        "WITH student_totals AS (" +
+        "    SELECT " +
+        "        s.name as student_name, " +
+        "        s.roll_number, " +
+        "        SUM(m.marks) as total_marks, " +
+        "        COUNT(DISTINCT m.subject_id) as subject_count " +
+        "    FROM students s " +
+        "    JOIN marks m ON s.roll_number = m.student_roll_number " +
+        "    WHERE m.exam_type = :examType " +
+        "    GROUP BY s.roll_number, s.name " +
+        "    HAVING COUNT(DISTINCT m.subject_id) = (SELECT COUNT(*) FROM subjects) " +
+        ") " +
+        "SELECT " +
+        "    student_name, " +
+        "    roll_number, " +
+        "    total_marks as average_marks, " +
+        "    :examType as exam_type, " +
+        "    ROW_NUMBER() OVER (ORDER BY total_marks DESC) as rank_position, " +
+        "    CURRENT_TIMESTAMP as last_updated " +
+        "FROM student_totals " +
+        "ORDER BY total_marks DESC " +
+        "LIMIT 3", 
+        nativeQuery = true)
     List<TopRanker> findTop3ByTotalMarks(@Param("examType") String examType);
 } 

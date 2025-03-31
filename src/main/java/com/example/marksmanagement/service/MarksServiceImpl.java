@@ -22,6 +22,9 @@ import java.util.Comparator;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.persistence.NoResultException;
+import java.util.ArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class MarksServiceImpl implements MarksService {
@@ -30,6 +33,7 @@ public class MarksServiceImpl implements MarksService {
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
     private final EntityManager entityManager;
+    private static final Logger log = LoggerFactory.getLogger(MarksServiceImpl.class);
 
     @Autowired
     public MarksServiceImpl(MarksRepository marksRepository, 
@@ -137,51 +141,32 @@ public class MarksServiceImpl implements MarksService {
     @Override
     public List<TopRankerDTO> getTop3RankersByTotalMarks(ExamType examType) {
         List<TopRanker> topRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
-        return topRankers.stream()
-                .map(ranker -> new TopRankerDTO(
-                        ranker.getStudentName(),
-                        ranker.getRollNumber(),
-                        ranker.getAverageMarks(),
-                        ranker.getExamType(),
-                        ranker.getRankPosition()
-                ))
-                .collect(Collectors.toList());
+        List<TopRankerDTO> dtoList = new ArrayList<>();
+        for (TopRanker ranker : topRankers) {
+            TopRankerDTO dto = new TopRankerDTO(
+                ranker.getStudentName(),
+                ranker.getRollNumber(),
+                ranker.getAverageMarks(),
+                ranker.getExamType(),
+                ranker.getRankPosition()
+            );
+            dtoList.add(dto);
+        }
+        return dtoList;
     }
 
-    // Scheduled task to update top rankers every hour
-    @Scheduled(fixedRate = 3600000) // 1 hour
-    @Transactional
+    @Scheduled(fixedRate = 3600000) // Update every hour
     public void updateTopRankers() {
         for (ExamType examType : ExamType.values()) {
-            // Delete existing rankings for this exam type
-            // topRankerRepository.deleteByExamType(examType);
-            
-            // Calculate new rankings
-            String sql = "SELECT s.name as student_name, s.roll_number, " +
-                        "AVG(m.marks) as average_marks, m.exam_type " +
-                        "FROM marks m " +
-                        "JOIN students s ON m.roll_number = s.roll_number " +
-                        "WHERE m.exam_type = :examType " +
-                        "GROUP BY s.roll_number, s.name, m.exam_type " +
-                        "ORDER BY AVG(m.marks) DESC " +
-                        "LIMIT 3";
-            
-            Query query = entityManager.createNativeQuery(sql)
-                                     .setParameter("examType", examType.toString());
-            
-            List<Object[]> results = query.getResultList();
-            
-            // Save new rankings
-            for (int i = 0; i < results.size(); i++) {
-                Object[] row = results.get(i);
-                // TopRanker ranker = new TopRanker(
-                //     (String) row[0],  // student_name
-                //     (String) row[1],  // roll_number
-                //     ((Number) row[2]).doubleValue(),  // average_marks
-                //     ExamType.valueOf((String) row[3]),  // exam_type
-                //     i + 1  // rank_position
-                // );
-                // topRankerRepository.save(ranker);
+            try {
+                topRankerRepository.deleteByExamType(examType);
+                List<TopRanker> newRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
+                for (TopRanker ranker : newRankers) {
+                    topRankerRepository.save(ranker);
+                }
+                log.info("Successfully updated top rankers for exam type: {}", examType);
+            } catch (Exception e) {
+                log.error("Error updating top rankers for exam type {}: {}", examType, e.getMessage());
             }
         }
     }
