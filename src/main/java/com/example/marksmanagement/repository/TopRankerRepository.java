@@ -31,7 +31,7 @@ public interface TopRankerRepository extends JpaRepository<TopRanker, Long> {
         "    JOIN marks m ON s.roll_number = m.roll_number " +
         "    WHERE m.exam_type = :examType " +
         "    GROUP BY s.roll_number, s.name " +
-        "    HAVING COUNT(DISTINCT m.subject_id) = (SELECT COUNT(*) FROM subjects) " +
+        "    HAVING COUNT(DISTINCT m.subject_id) > 0 " +
         ") " +
         "SELECT " +
         "    student_name, " +

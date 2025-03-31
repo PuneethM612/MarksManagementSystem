@@ -137,7 +137,10 @@ public class MarksServiceImpl implements MarksService {
 
     @Override
     public List<TopRankerDTO> getTop3RankersByTotalMarks(ExamType examType) {
+        log.info("Fetching top 3 rankers by total marks for exam type: {}", examType);
         List<TopRanker> topRankers = topRankerRepository.findTop3ByTotalMarks(examType.toString());
+        log.info("Found {} top rankers", topRankers.size());
+        
         List<TopRankerDTO> dtoList = new ArrayList<>();
         for (TopRanker ranker : topRankers) {
             TopRankerDTO dto = new TopRankerDTO(
@@ -148,6 +151,7 @@ public class MarksServiceImpl implements MarksService {
                 ranker.getRankPosition()
             );
             dtoList.add(dto);
+            log.info("Added ranker: {} with total marks: {}", ranker.getStudentName(), ranker.getAverageMarks());
         }
         return dtoList;
     }
