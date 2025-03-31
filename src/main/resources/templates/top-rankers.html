@@ -3,6 +3,7 @@
       th:replace="layout :: layout(~{::title}, ~{::section})">
 <head>
     <title>Top Rankers - Student Marks Management</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
     <section>
@@ -18,10 +19,10 @@
                         <label for="examType" class="form-label">Select Exam Type</label>
                         <select class="form-select" id="examType" name="examType" required>
                             <option value="">-- Select Exam Type --</option>
-                            <option th:each="examType : ${examTypes}" 
-                                    th:value="${examType}" 
-                                    th:text="${examType.displayName}"
-                                    th:selected="${examType == selectedExamType}"></option>
+                            <option th:each="type : ${T(com.example.marksmanagement.model.ExamType).values()}"
+                                    th:value="${type}"
+                                    th:text="${type.displayName}"
+                                    th:selected="${type == selectedExamType}"></option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary">Show Top Rankers</button>
@@ -45,7 +46,7 @@
                                 <th>Rank</th>
                                 <th>Student Name</th>
                                 <th>Roll Number</th>
-                                <th>Average Marks</th>
+                                <th>Total Marks</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -58,7 +59,7 @@
                                 </td>
                                 <td th:text="${ranker.studentName}"></td>
                                 <td th:text="${ranker.rollNumber}"></td>
-                                <td th:text="${#numbers.formatDecimal(ranker.averageMarks, 1, 2)}"></td>
+                                <td th:text="${ranker.totalMarks}"></td>
                                 <td>
                                     <a th:href="@{/marks/search/results(rollNumber=${ranker.rollNumber},examType=${ranker.examType})}"
                                         class="btn btn-sm btn-info">View Details</a>

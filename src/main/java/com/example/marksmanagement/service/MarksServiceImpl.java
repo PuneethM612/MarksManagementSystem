@@ -4,11 +4,10 @@ import com.example.marksmanagement.model.ExamType;
 import com.example.marksmanagement.model.Marks;
 import com.example.marksmanagement.model.Student;
 import com.example.marksmanagement.model.Subject;
-import com.example.marksmanagement.model.TopRanker;
+import com.example.marksmanagement.dto.TopRankerDTO;
 import com.example.marksmanagement.repository.MarksRepository;
 import com.example.marksmanagement.repository.StudentRepository;
 import com.example.marksmanagement.repository.SubjectRepository;
-import com.example.marksmanagement.repository.TopRankerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,19 +28,16 @@ public class MarksServiceImpl implements MarksService {
     private final MarksRepository marksRepository;
     private final StudentRepository studentRepository;
     private final SubjectRepository subjectRepository;
-    private final TopRankerRepository topRankerRepository;
     private final EntityManager entityManager;
 
     @Autowired
     public MarksServiceImpl(MarksRepository marksRepository, 
                           StudentRepository studentRepository,
                           SubjectRepository subjectRepository,
-                          TopRankerRepository topRankerRepository,
                           EntityManager entityManager) {
         this.marksRepository = marksRepository;
         this.studentRepository = studentRepository;
         this.subjectRepository = subjectRepository;
-        this.topRankerRepository = topRankerRepository;
         this.entityManager = entityManager;
     }
 
@@ -113,16 +109,26 @@ public class MarksServiceImpl implements MarksService {
 
     @Override
     public List<TopRankerDTO> getTop3Rankers(ExamType examType) {
-        // Get from top_rankers table
-        List<TopRanker> topRankers = topRankerRepository.findTop3ByExamType(examType.toString());
+        String sql = "SELECT s.name as student_name, s.roll_number, " +
+                    "SUM(m.marks) as total_marks, m.exam_type " +
+                    "FROM marks m " +
+                    "JOIN students s ON m.roll_number = s.roll_number " +
+                    "WHERE m.exam_type = :examType " +
+                    "GROUP BY s.roll_number, s.name, m.exam_type " +
+                    "ORDER BY SUM(m.marks) DESC " +
+                    "LIMIT 3";
         
-        // Convert to DTOs
-        return topRankers.stream()
-            .map(ranker -> new TopRankerDTO(
-                ranker.getStudentName(),
-                ranker.getRollNumber(),
-                ranker.getAverageMarks(),
-                ranker.getExamType()
+        Query query = entityManager.createNativeQuery(sql)
+                                 .setParameter("examType", examType.toString());
+        
+        List<Object[]> results = query.getResultList();
+        
+        return results.stream()
+            .map(row -> new TopRankerDTO(
+                (String) row[0],  // student_name
+                (String) row[1],  // roll_number
+                ((Number) row[2]).doubleValue(),  // total_marks
+                ExamType.valueOf((String) row[3])  // exam_type
             ))
             .collect(Collectors.toList());
     }
@@ -133,7 +139,7 @@ public class MarksServiceImpl implements MarksService {
     public void updateTopRankers() {
         for (ExamType examType : ExamType.values()) {
             // Delete existing rankings for this exam type
-            topRankerRepository.deleteByExamType(examType);
+            // topRankerRepository.deleteByExamType(examType);
             
             // Calculate new rankings
             String sql = "SELECT s.name as student_name, s.roll_number, " +
@@ -153,14 +159,14 @@ public class MarksServiceImpl implements MarksService {
             // Save new rankings
             for (int i = 0; i < results.size(); i++) {
                 Object[] row = results.get(i);
-                TopRanker ranker = new TopRanker(
-                    (String) row[0],  // student_name
-                    (String) row[1],  // roll_number
-                    ((Number) row[2]).doubleValue(),  // average_marks
-                    ExamType.valueOf((String) row[3]),  // exam_type
-                    i + 1  // rank_position
-                );
-                topRankerRepository.save(ranker);
+                // TopRanker ranker = new TopRanker(
+                //     (String) row[0],  // student_name
+                //     (String) row[1],  // roll_number
+                //     ((Number) row[2]).doubleValue(),  // average_marks
+                //     ExamType.valueOf((String) row[3]),  // exam_type
+                //     i + 1  // rank_position
+                // );
+                // topRankerRepository.save(ranker);
             }
         }
     }
