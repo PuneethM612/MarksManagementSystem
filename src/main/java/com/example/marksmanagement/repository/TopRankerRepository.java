@@ -28,7 +28,7 @@ public interface TopRankerRepository extends JpaRepository<TopRanker, Long> {
         "        SUM(m.marks) as total_marks, " +
         "        COUNT(DISTINCT m.subject_id) as subject_count " +
         "    FROM students s " +
-        "    JOIN marks m ON s.roll_number = m.student_roll_number " +
+        "    JOIN marks m ON s.roll_number = m.roll_number " +
         "    WHERE m.exam_type = :examType " +
         "    GROUP BY s.roll_number, s.name " +
         "    HAVING COUNT(DISTINCT m.subject_id) = (SELECT COUNT(*) FROM subjects) " +
