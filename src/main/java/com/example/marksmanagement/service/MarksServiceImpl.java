@@ -152,4 +152,50 @@ public class MarksServiceImpl implements MarksService {
             return new ArrayList<>();
         }
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TopRankerDTO> getTop3RankersByTotalMarks(ExamType examType) {
+        try {
+            log.info("Fetching top 3 rankers by total marks for exam type: {}", examType);
+            
+            String sql = "SELECT s.name as student_name, s.roll_number, " +
+                        "ROUND(SUM(m.marks), 2) as total_marks, " +
+                        "ROW_NUMBER() OVER (ORDER BY SUM(m.marks) DESC) as rank_position " +
+                        "FROM marks m " +
+                        "JOIN students s ON m.student_id = s.id " +
+                        "WHERE m.exam_type = :examType " +
+                        "GROUP BY s.id, s.name, s.roll_number " +
+                        "ORDER BY total_marks DESC " +
+                        "LIMIT 3";
+
+            Query query = entityManager.createNativeQuery(sql);
+            query.setParameter("examType", examType.toString());
+            
+            List<Object[]> results = query.getResultList();
+            List<TopRankerDTO> topRankers = new ArrayList<>();
+            
+            for (Object[] row : results) {
+                try {
+                    TopRankerDTO dto = new TopRankerDTO(
+                        (String) row[0],  // student_name
+                        (String) row[1],  // roll_number
+                        ((Number) row[2]).doubleValue(),  // total_marks
+                        examType,
+                        ((Number) row[3]).intValue()  // rank_position
+                    );
+                    topRankers.add(dto);
+                    log.info("Added ranker: {} with total marks: {}", dto.getStudentName(), dto.getAverageMarks());
+                } catch (Exception e) {
+                    log.error("Error creating DTO for row: {}", row, e);
+                }
+            }
+            
+            return topRankers;
+        } catch (Exception e) {
+            log.error("Error fetching top rankers by total marks for exam type {}: {}", examType, e.getMessage());
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
+    }
 } 
